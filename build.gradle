@@ -1,0 +1,109 @@
+plugins {
+    id 'java'
+    id 'org.openapi.generator' version '7.4.0'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+    // Spring Web (annotations + ResponseEntity)
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // Jakarta validation annotations
+    implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+
+    // Jackson annotations used in DTOs
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.17.1'
+
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
+    implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
+
+    implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
+
+    // OpenAPI / Swagger annotations
+    implementation 'io.swagger.core.v3:swagger-annotations-jakarta:2.2.21'
+
+    // Nullable handling used by OpenAPI generator
+    implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
+}
+
+
+def openApiRoot = file("$rootDir/openapi")
+def generatedDir = "$rootDir/generated"
+def basePackage = "com.example"
+
+/**
+ * Dynamically create one OpenAPI generator task per spec
+ */
+openApiRoot.eachFileRecurse { specFile ->
+    if (specFile.isFile() && (specFile.name.endsWith(".yaml") || specFile.name.endsWith(".yml"))) {
+
+        // Derive package from folder path
+        def relativePath = specFile.parentFile
+                .path
+                .replace(openApiRoot.path, "")
+                .replace(File.separator, ".")
+                .replaceAll("^\\.", "")
+
+        def taskName = "openApiGen_" + relativePath.replace(".", "_")
+
+        tasks.register(taskName, org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+
+
+            generatorName = "spring"
+            inputSpec = specFile.absolutePath
+            outputDir = generatedDir
+
+            apiPackage = "${basePackage}.${relativePath}.api"
+            modelPackage = "${basePackage}.${relativePath}.dto"
+
+            globalProperties = [
+                    apis             : "",
+                    models           : "",
+                    supportingFiles  : "false"
+            ]
+
+            configOptions = [
+                    interfaceOnly        : "true",
+                    useResponseEntity    : "true",
+                    useSpringBoot3       : "true",
+                    useTags              : "true",
+                    dateLibrary          : "java8",
+                    skipDefaultInterface : "true"
+            ]
+        }
+    }
+}
+
+/**
+ * Aggregate task
+ */
+tasks.register('openApiGenerateAll') {
+    dependsOn tasks.matching { it.name.startsWith("openApiGen_") }
+}
+
+/**
+ * Make generated code compile
+ */
+sourceSets {
+    main {
+        java {
+            srcDir "$generatedDir/src/main/java"
+        }
+    }
+}
+
+/**
+ * Clean generated output
+ */
+tasks.register('cleanGenerated', Delete) {
+    delete generatedDir
+}
+
+/**
+ * Ensure code is generated before compile
+ */
+compileJava.dependsOn openApiGenerateAll

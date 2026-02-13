@@ -1,0 +1,71 @@
+openapi: 3.0.3
+info:
+  title: Area API
+  version: 1.0.0
+
+paths:
+  /area/create:
+    post:
+      tags: [area]
+      summary: Create area
+      operationId: createArea
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AreaRequest'
+      responses:
+        '200':
+          description: Area created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AreaResponse'
+
+  /area/list-all:
+    get:
+      tags: [area]
+      summary: List areas
+      operationId: listAreas
+      responses:
+        '200':
+          description: List of areas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AreaResponse'
+
+components:
+  schemas:
+    AreaRequest:
+      type: object
+      required: [areaName, stateCode]
+      properties:
+        areaName:
+          type: string
+          example: Kanpur
+        stateCode:
+          type: string
+          example: UP
+
+    AreaResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        areaName:
+          type: string
+          example: Kanpur
+        stateCode:
+          type: string
+          example: UP
+        shopCode:
+          type: integer
+          example: 1234
+        createdAt:
+          type: string
+          format: date-time
