@@ -1,43 +1,39 @@
+import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
+
 plugins {
     id 'java'
     id 'org.openapi.generator' version '7.4.0'
+    id 'maven-publish'
 }
+
+group = "in.lekhai"
+version = "1.0.3"
 
 repositories {
     mavenCentral()
 }
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
 dependencies {
-
-    // Spring Web (annotations + ResponseEntity)
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-
-    // Jakarta validation annotations
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.3.0'
     implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
-
-    // Jackson annotations used in DTOs
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.17.1'
-
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
     implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
-
     implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
-
-    // OpenAPI / Swagger annotations
     implementation 'io.swagger.core.v3:swagger-annotations-jakarta:2.2.21'
-
-    // Nullable handling used by OpenAPI generator
     implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
 }
 
 
 def openApiRoot = file("$rootDir/openapi")
 def generatedDir = "$rootDir/generated"
-def basePackage = "com.example"
+def basePackage = "in.lekhai"
 
-/**
- * Dynamically create one OpenAPI generator task per spec
- */
 openApiRoot.eachFileRecurse { specFile ->
     if (specFile.isFile() && (specFile.name.endsWith(".yaml") || specFile.name.endsWith(".yml"))) {
 
@@ -48,9 +44,10 @@ openApiRoot.eachFileRecurse { specFile ->
                 .replace(File.separator, ".")
                 .replaceAll("^\\.", "")
 
-        def taskName = "openApiGen_" + relativePath.replace(".", "_")
+        def javaTaskName = "openApiGen_" + relativePath.replace(".", "_")
+//        def javaOutputDir = "$generatedDir/generated-java/${relativePath.replace(".", "/")}"
 
-        tasks.register(taskName, org.openapitools.generator.gradle.plugin.tasks.GenerateTask) {
+        tasks.register(javaTaskName, GenerateTask) {
 
 
             generatorName = "spring"
@@ -61,49 +58,80 @@ openApiRoot.eachFileRecurse { specFile ->
             modelPackage = "${basePackage}.${relativePath}.dto"
 
             globalProperties = [
-                    apis             : "",
-                    models           : "",
-                    supportingFiles  : "false"
+                    apis           : "",
+                    models         : "",
+                    supportingFiles: "false"
             ]
 
             configOptions = [
-                    interfaceOnly        : "true",
-                    useResponseEntity    : "true",
-                    useSpringBoot3       : "true",
-                    useTags              : "true",
-                    dateLibrary          : "java8",
-                    skipDefaultInterface : "true"
+                    interfaceOnly       : "true",
+                    useSpringBoot3      : "true",
+                    useTags             : "true",
+                    skipDefaultInterface: "true",
+                    useRecords : "true"
+            ]
+        }
+
+        //Dart
+        def dartTaskName = "openApiGenDart_" + relativePath.replace(".", "_")
+        def dartOutputDir = "$generatedDir/generated-dart/${relativePath.replace(".", "/")}"
+
+        tasks.register(dartTaskName, GenerateTask) {
+            generatorName = "dart-dio"
+            inputSpec = specFile.absolutePath
+            outputDir = dartOutputDir
+
+            apiPackage = "${basePackage}.${relativePath}.api"
+            modelPackage = "${basePackage}.${relativePath}.dto"
+
+            globalProperties = [
+                    apis           : "",
+                    models         : "",
+                    supportingFiles: "false",
+                    apiTests       : "false",
+                    modelTests     : "false",
+                    apiDocs        : "false",
+                    modelDocs      : "false"
+            ]
+
+            configOptions = [
+                    allowUnicodeIddentifiers: "true",
+                    useEnumExtension        : "true"
             ]
         }
     }
 }
 
-/**
- * Aggregate task
- */
+
 tasks.register('openApiGenerateAll') {
     dependsOn tasks.matching { it.name.startsWith("openApiGen_") }
 }
 
-/**
- * Make generated code compile
- */
 sourceSets {
     main {
         java {
-            srcDir "$generatedDir/src/main/java"
+            srcDir "$generatedDir"
         }
     }
 }
 
-/**
- * Clean generated output
- */
 tasks.register('cleanGenerated', Delete) {
     delete generatedDir
 }
 
-/**
- * Ensure code is generated before compile
- */
 compileJava.dependsOn openApiGenerateAll
+
+
+jar {
+    archiveBaseName.set("in.lekhai")
+    archiveVersion.set("1.0.0")
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifactId = "lekhai-api-spec"
+        }
+    }
+}
