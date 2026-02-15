@@ -15,7 +15,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StateListResponseWrapper'
+                type: array
+                items:
+                  $ref: '#/components/schemas/StateResponse'
 
 components:
   schemas:
@@ -28,15 +30,3 @@ components:
         name:
           type: string
           example: Uttar Pradesh
-
-    StateListResponseWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/StateResponse'

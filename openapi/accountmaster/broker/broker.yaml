@@ -21,7 +21,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BrokerResponseWrapper'
+                $ref: '#/components/schemas/BrokerResponse'
 
   /api/broker/list-all:
     get:
@@ -34,7 +34,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BrokerListResponseWrapper'
+                type: array
+                items:
+                  $ref: '#/components/schemas/BrokerResponse'
 
 components:
   schemas:
@@ -64,25 +66,3 @@ components:
         createdAt:
           type: string
           format: date-time
-
-    BrokerResponseWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-        data:
-          $ref: '#/components/schemas/BrokerResponse'
-
-    BrokerListResponseWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/BrokerResponse'

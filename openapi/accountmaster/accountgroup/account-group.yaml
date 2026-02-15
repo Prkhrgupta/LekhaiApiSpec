@@ -21,7 +21,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AccountGroupResponseWrapper'
+                $ref: '#/components/schemas/AccountGroupResponse'
 
   /api/account-group/list-all:
     get:
@@ -34,7 +34,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AccountGroupListResponseWrapper'
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccountGroupResponse'
 
 components:
   schemas:
@@ -59,25 +61,3 @@ components:
         name:
           type: string
           example: Customers
-
-    AccountGroupResponseWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-        data:
-          $ref: '#/components/schemas/AccountGroupResponse'
-
-    AccountGroupListResponseWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/AccountGroupResponse'

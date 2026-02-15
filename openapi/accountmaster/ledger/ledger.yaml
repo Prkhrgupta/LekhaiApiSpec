@@ -21,7 +21,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LedgerResponseWrapper'
+                $ref: '#/components/schemas/LedgerResponse'
 
   /api/ledger/list-all:
     get:
@@ -34,7 +34,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LedgerListResponseWrapper'
+                type: array
+                items:
+                  $ref: '#/components/schemas/LedgerResponse'
 
   /api/ledger/{id}:
     get:
@@ -54,7 +56,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LedgerResponseWrapper'
+                $ref: '#/components/schemas/LedgerResponse'
     put:
       tags: [ledger]
       summary: Update ledger
@@ -78,7 +80,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LedgerResponseWrapper'
+                $ref: '#/components/schemas/LedgerResponse'
 
 components:
   schemas:
@@ -301,24 +303,3 @@ components:
         party_type:
           $ref: '#/components/schemas/PartyType'
 
-    LedgerResponseWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-        data:
-          $ref: '#/components/schemas/LedgerResponse'
-
-    LedgerListResponseWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/LedgerResponse'
