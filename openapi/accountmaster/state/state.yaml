@@ -1,0 +1,42 @@
+openapi: 3.0.3
+info:
+  title: State API
+  version: 1.0.0
+
+paths:
+  /api/state/list-all:
+    get:
+      tags: [state]
+      summary: List all states
+      operationId: listAllStates
+      responses:
+        '200':
+          description: List of states
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StateListResponseWrapper'
+
+components:
+  schemas:
+    StateResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          example: UP
+        name:
+          type: string
+          example: Uttar Pradesh
+
+    StateListResponseWrapper:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/StateResponse'

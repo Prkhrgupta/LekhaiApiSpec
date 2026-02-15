@@ -1,0 +1,324 @@
+openapi: 3.0.3
+info:
+  title: Ledger API
+  version: 1.0.0
+
+paths:
+  /api/ledger/create:
+    post:
+      tags: [ledger]
+      summary: Create ledger
+      operationId: createLedger
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LedgerRequest'
+      responses:
+        '200':
+          description: Ledger created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerResponseWrapper'
+
+  /api/ledger/list-all:
+    get:
+      tags: [ledger]
+      summary: List all ledgers
+      operationId: listLedgers
+      responses:
+        '200':
+          description: List of ledgers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerListResponseWrapper'
+
+  /api/ledger/{id}:
+    get:
+      tags: [ledger]
+      summary: Get ledger by ID
+      operationId: getLedger
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Ledger details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerResponseWrapper'
+    put:
+      tags: [ledger]
+      summary: Update ledger
+      operationId: updateLedger
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LedgerRequest'
+      responses:
+        '200':
+          description: Ledger updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerResponseWrapper'
+
+components:
+  schemas:
+    AccountEntryType:
+      type: string
+      enum: [DR, CR]
+
+    RegistrationType:
+      type: string
+      enum: [COMPOSITION, CUSTOMER, REGULAR, UNREGISTERED]
+
+    PartyType:
+      type: string
+      enum: [NOT_APPLICABLE, DEEMED_EXPORT, GOVERNMENT_ENTITY, SEZ]
+
+    LedgerRequest:
+      type: object
+      required: [name]
+      properties:
+        gst_in_number:
+          type: string
+        name:
+          type: string
+        account_group:
+          type: integer
+          format: int64
+        opening_balance:
+          type: number
+        account_entry_type:
+          $ref: '#/components/schemas/AccountEntryType'
+        legal_name:
+          type: string
+        Location:
+          type: string
+        country_name:
+          type: string
+        state_and_code:
+          type: string
+        mail_to:
+          $ref: '#/components/schemas/MailTo'
+        area_id:
+          type: integer
+          format: int64
+        contact_person:
+          type: string
+        phone_number:
+          type: integer
+          format: int64
+        pan:
+          type: string
+        credit_limit:
+          type: number
+        transport_id:
+          type: integer
+          format: int64
+        tan_number:
+          type: string
+        broker_id:
+          type: integer
+          format: int64
+        gstInDetailsPresent:
+          type: boolean
+        gst_in_details:
+          $ref: '#/components/schemas/GstInDetail'
+        aadhaar_number:
+          type: string
+        image_uploaded:
+          type: boolean
+        email:
+          type: string
+        msme_number:
+          type: string
+        distance:
+          type: number
+        pin_code:
+          type: string
+        city:
+          type: string
+
+    MailTo:
+      type: object
+      properties:
+        mail_to_line_1:
+          type: string
+        mail_to_line_2:
+          type: string
+        mail_to_line_3:
+          type: string
+
+    GstInDetail:
+      type: object
+      properties:
+        registration_type:
+          $ref: '#/components/schemas/RegistrationType'
+        is_e_commerce_operator:
+          type: boolean
+        gst_in_uin:
+          type: string
+        party_type:
+          $ref: '#/components/schemas/PartyType'
+
+    LedgerResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        legal_name:
+          type: string
+        account_group_name:
+          type: string
+        opening_balance:
+          type: number
+        opening_balance_type:
+          $ref: '#/components/schemas/AccountEntryType'
+        credit_limit:
+          type: number
+        pan:
+          type: string
+        aadhaar:
+          type: string
+        tan:
+          type: string
+        email:
+          type: string
+        msme:
+          type: string
+        contact_person:
+          type: string
+        phone_number:
+          type: integer
+          format: int64
+        gst_in_number:
+          type: string
+        location:
+          type: string
+        is_active:
+          type: boolean
+        area:
+          $ref: '#/components/schemas/LedgerArea'
+        broker:
+          $ref: '#/components/schemas/LedgerBroker'
+        transport:
+          $ref: '#/components/schemas/LedgerTransport'
+        gstin_details:
+          $ref: '#/components/schemas/GstInDetailResponse'
+        address:
+          $ref: '#/components/schemas/LedgerAddress'
+        created_at:
+          type: string
+          format: date-time
+
+    LedgerAddress:
+      type: object
+      properties:
+        address_line_1:
+          type: string
+        address_line_2:
+          type: string
+        address_line_3:
+          type: string
+        city:
+          type: string
+        state_id:
+          type: string
+        area_id:
+          type: integer
+          format: int64
+        pincode:
+          type: string
+        distance:
+          type: number
+
+    LedgerArea:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        state_code:
+          type: string
+
+    LedgerBroker:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        phone:
+          type: string
+
+    LedgerTransport:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        phone:
+          type: string
+        gst:
+          type: string
+
+    GstInDetailResponse:
+      type: object
+      properties:
+        registration_type:
+          $ref: '#/components/schemas/RegistrationType'
+        is_e_commerce_operator:
+          type: boolean
+        gst_in_uin:
+          type: string
+        party_type:
+          $ref: '#/components/schemas/PartyType'
+
+    LedgerResponseWrapper:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LedgerResponse'
+
+    LedgerListResponseWrapper:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LedgerResponse'

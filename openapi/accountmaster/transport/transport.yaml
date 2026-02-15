@@ -1,0 +1,94 @@
+openapi: 3.0.3
+info:
+  title: Transport API
+  version: 1.0.0
+
+paths:
+  /api/transport/create:
+    post:
+      tags: [transport]
+      summary: Create transport
+      operationId: createTransport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransportRequest'
+      responses:
+        '200':
+          description: Transport created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransportResponseWrapper'
+
+  /api/transport/list-all:
+    get:
+      tags: [transport]
+      summary: List transports
+      operationId: listTransports
+      responses:
+        '200':
+          description: List of transports
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransportListResponseWrapper'
+
+components:
+  schemas:
+    TransportRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          example: Blue Dart
+        phone:
+          type: string
+          example: '9876543210'
+        gstNo:
+          type: string
+          example: 09AAFCP1234A1Z5
+
+    TransportResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          example: Blue Dart
+        phone:
+          type: string
+          example: '9876543210'
+        gstNo:
+          type: string
+          example: 09AAFCP1234A1Z5
+        createdAt:
+          type: string
+          format: date-time
+
+    TransportResponseWrapper:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/TransportResponse'
+
+    TransportListResponseWrapper:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransportResponse'

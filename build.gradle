@@ -19,118 +19,129 @@ java {
     }
 }
 
+/* -------------------------
+ * Dependencies (Java only)
+ * ------------------------- */
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-web:3.3.0'
+    implementation 'org.springframework.boot:spring-boot-starter-web:3.4.1'
     implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.17.1'
     implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
     implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
     implementation 'io.swagger.core.v3:swagger-annotations-jakarta:2.2.21'
-    implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
 }
 
-
+/* -------------------------
+ * Paths
+ * ------------------------- */
 def openApiRoot = file("$rootDir/openapi")
-def generatedDir = "$rootDir/generated"
+
+def generatedRoot = file("$rootDir/generated")
+def javaGeneratedDir = file("$generatedRoot/java")
+def dartGeneratedDir = file("$generatedRoot/dart")
+
 def basePackage = "in.lekhai"
 
+/* -------------------------
+ * OpenAPI Generation Tasks
+ * ------------------------- */
 openApiRoot.eachFileRecurse { specFile ->
-    if (specFile.isFile() && (specFile.name.endsWith(".yaml") || specFile.name.endsWith(".yml"))) {
+    if (!specFile.isFile() || !specFile.name.matches(".*\\.ya?ml")) return
 
-        // Derive package from folder path
-        def relativePath = specFile.parentFile
-                .path
-                .replace(openApiRoot.path, "")
-                .replace(File.separator, ".")
-                .replaceAll("^\\.", "")
+    // folder → package path
+    def relativePath = specFile.parentFile
+            .path
+            .replace(openApiRoot.path, "")
+            .replace(File.separator, ".")
+            .replaceAll("^\\.", "")
 
-        def javaTaskName = "openApiGen_" + relativePath.replace(".", "_")
-//        def javaOutputDir = "$generatedDir/generated-java/${relativePath.replace(".", "/")}"
+    def taskSuffix = relativePath.replace(".", "_")
 
-        tasks.register(javaTaskName, GenerateTask) {
+    /* ========= JAVA ========= */
+    tasks.register("openApiGenJava_${taskSuffix}", GenerateTask) {
 
+        generatorName = "spring"
+        inputSpec = specFile.absolutePath
+        outputDir = javaGeneratedDir.absolutePath
 
-            generatorName = "spring"
-            inputSpec = specFile.absolutePath
-            outputDir = generatedDir
+        apiPackage = "${basePackage}.${relativePath}.api"
+        modelPackage = "${basePackage}.${relativePath}.dto"
 
-            apiPackage = "${basePackage}.${relativePath}.api"
-            modelPackage = "${basePackage}.${relativePath}.dto"
+        globalProperties = [
+                apis           : "",
+                models         : "",
+                supportingFiles: "false"
+        ]
 
-            globalProperties = [
-                    apis           : "",
-                    models         : "",
-                    supportingFiles: "false"
-            ]
+        configOptions = [
+                interfaceOnly        : "true",
+                useSpringBoot3       : "true",
+                useTags              : "true",
+                skipDefaultInterface : "true",
+                useRecords           : "true"
+        ]
+    }
 
-            configOptions = [
-                    interfaceOnly       : "true",
-                    useSpringBoot3      : "true",
-                    useTags             : "true",
-                    skipDefaultInterface: "true",
-                    useRecords : "true"
-            ]
-        }
+    /* ========= DART ========= */
+    tasks.register("openApiGenDart_${taskSuffix}", GenerateTask) {
 
-        //Dart
-        def dartTaskName = "openApiGenDart_" + relativePath.replace(".", "_")
-        def dartOutputDir = "$generatedDir/generated-dart/${relativePath.replace(".", "/")}"
+        generatorName = "dart-dio"
+        inputSpec = specFile.absolutePath
+        outputDir = "${dartGeneratedDir}/${relativePath.replace('.', '/')}"
 
-        tasks.register(dartTaskName, GenerateTask) {
-            generatorName = "dart-dio"
-            inputSpec = specFile.absolutePath
-            outputDir = dartOutputDir
+        globalProperties = [
+                apis       : "",
+                models     : "",
+                apiTests   : "false",
+                modelTests : "false",
+                apiDocs    : "false",
+                modelDocs  : "false"
+        ]
 
-            apiPackage = "${basePackage}.${relativePath}.api"
-            modelPackage = "${basePackage}.${relativePath}.dto"
-
-            globalProperties = [
-                    apis           : "",
-                    models         : "",
-                    supportingFiles: "false",
-                    apiTests       : "false",
-                    modelTests     : "false",
-                    apiDocs        : "false",
-                    modelDocs      : "false"
-            ]
-
-            configOptions = [
-                    allowUnicodeIddentifiers: "true",
-                    useEnumExtension        : "true"
-            ]
-        }
+        configOptions = [
+                allowUnicodeIdentifiers : "true",
+                useEnumExtension        : "true"
+        ]
     }
 }
 
-
-tasks.register('openApiGenerateAll') {
-    dependsOn tasks.matching { it.name.startsWith("openApiGen_") }
+/* -------------------------
+ * Aggregate Task
+ * ------------------------- */
+tasks.register("openApiGenerateAll") {
+    dependsOn tasks.matching {
+        it.name.startsWith("openApiGenJava_") ||
+                it.name.startsWith("openApiGenDart_")
+    }
 }
 
+/* -------------------------
+ * SourceSets (Java ONLY)
+ * ------------------------- */
 sourceSets {
     main {
         java {
-            srcDir "$generatedDir"
+            srcDir "$javaGeneratedDir/src/main/java"
         }
     }
 }
 
-tasks.register('cleanGenerated', Delete) {
-    delete generatedDir
+compileJava.dependsOn("openApiGenerateAll")
+
+/* -------------------------
+ * Cleanup
+ * ------------------------- */
+tasks.register("cleanGenerated", Delete) {
+    delete generatedRoot
 }
 
-compileJava.dependsOn openApiGenerateAll
-
-
-jar {
-    archiveBaseName.set("in.lekhai")
-    archiveVersion.set("1.0.0")
-}
-
+/* -------------------------
+ * Publishing
+ * ------------------------- */
 publishing {
     publications {
-        mavenJava(MavenPublication) {
-            from components.java
+        create("mavenJava", MavenPublication) {
+            artifact(tasks.named("jar"))
             artifactId = "lekhai-api-spec"
         }
     }
