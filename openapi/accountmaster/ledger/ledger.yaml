@@ -81,6 +81,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LedgerResponse'
+  /api/ledger/ledgers/summary:
+    get:
+      tags: [ ledger ]
+      summary: Get ledger summary
+      operationId: getLedgerSummaries
+      responses:
+        '200':
+          description: Ledger summary response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LedgerSummaryResponse'
 
 components:
   schemas:
@@ -154,7 +166,7 @@ components:
         msme_number:
           type: string
         distance:
-          type: number
+          type: double
         pin_code:
           type: string
         city:
@@ -303,3 +315,42 @@ components:
         party_type:
           $ref: '#/components/schemas/PartyType'
 
+    LedgerSummaryResponse:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            $ref: '#/components/schemas/LedgerSummaryColumn'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LedgerSummaryItem'
+
+    LedgerSummaryColumn:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        width:
+          type: integer
+          format: int32
+
+    LedgerSummaryItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        state:
+          type: string
+        area:
+          type: string
+        accountGroup:
+          type: string
+        gstin:
+          type: string

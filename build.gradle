@@ -37,8 +37,8 @@ dependencies {
 def openApiRoot = file("$rootDir/openapi")
 
 def generatedRoot = file("$rootDir/generated")
-def javaGeneratedDir = file("$generatedRoot/java")
-def dartGeneratedDir = file("$generatedRoot/dart")
+def javaGeneratedDir = file("$generatedRoot/generated-java")
+def dartGeneratedDir = file("$generatedRoot/generated-dart")
 
 def basePackage = "in.lekhai"
 
@@ -87,7 +87,10 @@ openApiRoot.eachFileRecurse { specFile ->
 
         generatorName = "dart-dio"
         inputSpec = specFile.absolutePath
-        outputDir = "${dartGeneratedDir}/${relativePath.replace('.', '/')}"
+        outputDir = dartGeneratedDir.absolutePath
+
+        apiPackage = "${basePackage}.${relativePath}.api"
+        modelPackage = "${basePackage}.${relativePath}.dto"
 
         globalProperties = [
                 apis       : "",
@@ -100,10 +103,73 @@ openApiRoot.eachFileRecurse { specFile ->
 
         configOptions = [
                 allowUnicodeIdentifiers : "true",
-                useEnumExtension        : "true"
+                useEnumExtension        : "true",
+                serializationLibrary    : "json_serializable"
         ]
     }
 }
+
+
+def dartPubspecFile = layout.projectDirectory.file(
+        "generated/generated-dart/pubspec.yaml"
+)
+
+// CAPTURE VERSION EARLY (CONFIG PHASE)
+def projectVersion = project.version.toString()
+
+tasks.register("generateDartPubspec") {
+    outputs.file(dartPubspecFile)
+
+    doLast {
+        dartPubspecFile.asFile.parentFile.mkdirs()
+
+        dartPubspecFile.asFile.text = """
+            name: lekhai_api
+            description: Generated Dart API client for Lekhai backend
+            version: ${projectVersion}
+            publish_to: "none"
+
+            environment:
+              sdk: ">=3.0.0 <4.0.0"
+
+            dependencies:
+              dio: ^5.4.0
+              json_annotation: ^4.9.0
+
+            dev_dependencies:
+              build_runner: ^2.4.8
+              json_serializable: ^6.8.0
+            """
+        .stripIndent()
+    }
+}
+
+def dartLibDir = layout.projectDirectory.dir("generated/generated-dart/lib")
+def dartSrcDir = layout.projectDirectory.dir("generated/generated-dart/lib/src")
+def dartBarrelFile = dartLibDir.file("lekhai_api_spec.dart")
+
+tasks.register("generateDartBarrel") {
+    outputs.file(dartBarrelFile)
+
+    doLast {
+        dartLibDir.asFile.mkdirs()
+
+        def exports = []
+
+        dartSrcDir.asFile.eachFileRecurse { f ->
+            if (f.name.endsWith(".dart")) {
+                def relative = f.path
+                        .replace(dartLibDir.asFile.path + File.separator, "")
+                        .replace("\\", "/")
+
+                exports << "export '$relative';"
+            }
+        }
+
+        dartBarrelFile.asFile.text = exports.sort().join("\n") + "\n"
+    }
+}
+
 
 /* -------------------------
  * Aggregate Task
@@ -113,6 +179,11 @@ tasks.register("openApiGenerateAll") {
         it.name.startsWith("openApiGenJava_") ||
                 it.name.startsWith("openApiGenDart_")
     }
+
+    finalizedBy(
+            "generateDartPubspec",
+            "generateDartBarrel"
+    )
 }
 
 /* -------------------------
@@ -129,10 +200,10 @@ sourceSets {
 compileJava.dependsOn("openApiGenerateAll")
 
 /* -------------------------
- * Cleanup
+ * Cleanup Java Only
  * ------------------------- */
-tasks.register("cleanGenerated", Delete) {
-    delete generatedRoot
+tasks.register("cleanGeneratedJava", Delete) {
+    delete javaGeneratedDir
 }
 
 /* -------------------------
